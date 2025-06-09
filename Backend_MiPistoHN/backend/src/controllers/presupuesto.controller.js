@@ -23,7 +23,7 @@ async function addPresupuesto(req, res) {
         presupuesto_usuario.nombre_presupuesto = nombre_presupuesto
         presupuesto_usuario.notas = notas || ''
 
-        presupuesto_usuario.save()
+        await presupuesto_usuario.save()
 
         response.success(res, 'Presupuesto actualizado correctamente', {
             monto: presupuesto_usuario.monto
