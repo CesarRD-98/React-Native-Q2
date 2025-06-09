@@ -1,5 +1,5 @@
-const response = require('../utils/response')
-const Categoria = require('../models/categoriaModel')
+const response = require('../utils/response.util')
+const { Categoria } = require('../models/asociaciones.model')
 
 async function getCategorias(req, res) {
     try {

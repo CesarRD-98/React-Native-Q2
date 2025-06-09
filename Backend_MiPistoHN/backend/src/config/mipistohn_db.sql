@@ -22,6 +22,10 @@ create table Presupuesto(
     foreign key(id_usuario) references Usuario(id_usuario) on delete cascade
 );
 
+-- alter table Presupuesto modify column monto decimal(10, 2) not null default 0.00;
+-- drop database mipistohn_db;
+
+	select monto, id_presupuesto from Presupuesto where id_usuario = 1;
 create table Categoria(
 	codigo_categoria int primary key auto_increment,
     categoria varchar(100) not null
@@ -60,3 +64,4 @@ INSERT INTO Categoria (categoria) VALUES
 ('Regalos'),
 ('Otros');
 
+select u.id_usuario, u.primer_nombre, u.primer_apellido, p.monto from Usuario u inner join Presupuesto p on u.id_usuario = p.id_usuario;
