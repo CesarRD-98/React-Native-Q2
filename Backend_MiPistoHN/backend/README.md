@@ -137,8 +137,8 @@ JWT_SECRET = jwt_secret_123
 
 ### Estadisticas
 
-- **GET** `/estadisticas`
-  _formato esperado:_ `/estadisticas?desde=2025-06-01&hasta=2025-06-09` 
+- **GET** `/estadisticas`  
+  _formato esperado:_ `/estadisticas?desde=2025-06-01&hasta=2025-06-09`  
   _Headers:_ `Authorization: Bearer <token>`  
   _Respuesta:_ `{ gastos: [] }`
 
