@@ -36,7 +36,7 @@ async function authUsuario(req, res) {
         })
 
     } catch (error) {
-        response.error(res, 'Error en el servidor al autenticar usuario')
+        response.error(res, 500, 'Error en el servidor al autenticar usuario')
         console.log('Error inesperado en authUsuario', error);
     }
 }
@@ -64,14 +64,13 @@ async function registerUsuario(req, res) {
         }
 
         const contrasenaHash = await bcrypt.hash(contrasena, 10)
-        const imageDefault = '/uploads/default.png'
 
         const nuevoUsuario = await Usuario.create({
             primer_nombre,
             primer_apellido,
             correo_electronico: correo,
             contrasena: contrasenaHash,
-            imagen_perfil: imageDefault
+            imagen_perfil: 'default.png'
         }, { transaction: t })
 
         await Presupuesto.create({
@@ -94,7 +93,7 @@ async function registerUsuario(req, res) {
 
     } catch (error) {
         await t.rollback()
-        response.error(res, 'Error en el servidor al registrar usuario')
+        response.error(res, 500, 'Error en el servidor al registrar usuario')
         console.log('Error inesperado en registerUsuario', error);
     }
 }

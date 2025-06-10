@@ -1,4 +1,4 @@
-const { Presupuesto, Usuario } = require('../models/asociaciones.model')
+const { Presupuesto } = require('../models/asociaciones.model')
 const response = require('../utils/response.util')
 
 async function addPresupuesto(req, res) {
@@ -13,7 +13,7 @@ async function addPresupuesto(req, res) {
         }
 
         if (isNaN(monto) || monto < 0) {
-            return response.error(res, 'Monto inválido')
+            return response.error(res, 401, 'Monto inválido')
         }
 
         presupuesto_usuario.monto = parseFloat(
@@ -30,7 +30,7 @@ async function addPresupuesto(req, res) {
         })
 
     } catch (error) {
-        response.error(res, 'Error en el servidor al agregar presupuesto')
+        response.error(res, 500, 'Error en el servidor al agregar presupuesto')
         console.log('Error inesperado en addPresupuesto', error);
     }
 }

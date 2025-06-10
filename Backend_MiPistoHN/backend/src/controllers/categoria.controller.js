@@ -11,7 +11,7 @@ async function getCategorias(req, res) {
 
         response.success(res, 'Éxito', categorias)
     } catch (error) {
-        response.error(res, 'Error en el servidor')
+        response.error(res, 500, 'Error en el servidor')
         console.log('Error inesperado en getCategorias', error);
     }
 }

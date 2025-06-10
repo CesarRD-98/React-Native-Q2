@@ -1,6 +1,8 @@
 const sequelize = require('../config/db')
 const { Gasto, Presupuesto, Categoria } = require('../models/asociaciones.model')
 const response = require('../utils/response.util')
+const { Op, fn, col } = require('sequelize')
+const dayjs = require('dayjs')
 
 async function createGasto(req, res) {
 
@@ -35,6 +37,13 @@ async function createGasto(req, res) {
 
         }, { transaction: t })
 
+        if (parseFloat(presupuesto.monto) <= 0) {
+            response.success(res, 'Has superado tu presupuesto establecido', {
+                superado: true,
+                excedente: montoValidado
+            })
+        }
+
         presupuesto.monto = parseFloat(
             (parseFloat(presupuesto.monto) - montoValidado).toFixed(2)
         )
@@ -44,14 +53,13 @@ async function createGasto(req, res) {
 
         response.success(res, 'Gasto guardado correctamente', {
             id: nuevo_gasto.id_usuario,
-            nombre_gasto: nuevo_gasto.nombre_gasto,
-            categoria: nuevo_gasto.categoria,
+            superado: false,
             monto: nuevo_gasto.monto
         })
 
     } catch (error) {
         await t.rollback()
-        response.error(res, 'Error en el servidor al crear gasto')
+        response.error(res, 500, 'Error en el servidor al crear gasto')
         console.log('Error inesperado en createGasto', error);
     }
 }
@@ -88,12 +96,66 @@ async function historyGastos(req, res) {
         response.success(res, 'Historial de gastos', { gastos: gastosMap })
 
     } catch (error) {
-        response.error(res, 'Error en el servidor al obtener gastos')
+        response.error(res, 500, 'Error en el servidor al obtener gastos')
         console.log('Error inesperado en historyGasto', error);
+    }
+}
+
+async function statisticsGastos(req, res) {
+    try {
+
+        const id_usuario = req.usuario.id
+        const { desde, hasta } = req.query
+
+        if (!desde || !hasta) {
+            return response.error(res, 400, 'Proporciona fechas con el formato: YYYY-MM-DD')
+        }
+
+        const dateStart = dayjs(desde).startOf('day').toDate()
+        const dateEnd = dayjs(hasta).endOf('day').toDate()
+
+        const result = await Gasto.findAll({
+            where: { 
+                id_usuario,
+                fecha_registro: {
+                    [Op.between]: [dateStart, dateEnd] 
+                }
+             },
+            attributes: [
+                [col('Gasto.codigo_categoria'), 'codigo_categoria'],
+                [fn('COUNT', col('Gasto.codigo_categoria')), 'cantidad'],
+                [fn('SUM', col('Gasto.monto')), 'total']
+            ],
+            include: [
+                {
+                    model: Categoria,
+                    as: 'categoria',
+                    attributes: ['categoria']
+                }
+            ],
+            group: ['Gasto.codigo_categoria']
+        })
+
+        if (result.length === 0) {
+            return response.success(res, 'No hay gastos registrados', {gastos: result})
+        }
+
+        const resultMap = result.map(r => ({
+            codigo_categoria: r.codigo_categoria,
+            categoria: r.categoria.categoria,
+            cantidad: r.dataValues.cantidad,
+            total: r.dataValues.total
+        }))
+
+        response.success(res, 'Éxito', { gastos: resultMap })
+    } catch (error) {
+        response.error(res, 500, 'Error en el servidor al obtener estadisticas de gastos')
+        console.log('Error inesperado en statisticsGastos', error);
     }
 }
 
 module.exports = {
     createGasto,
-    historyGastos
+    historyGastos,
+    statisticsGastos
 }

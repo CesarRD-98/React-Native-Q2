@@ -9,7 +9,7 @@ async function getUsuario(req, res) { // testing
         const id_usuario = req.usuario.id
 
         const usuario = await Usuario.findByPk(id_usuario, {
-            attributes: ['id_usuario', 'primer_nombre', 'primer_apellido', 'imagen_perfil']
+            attributes: ['id_usuario', 'primer_nombre', 'primer_apellido']
         })
 
         if (!usuario) {
@@ -49,16 +49,14 @@ async function getUsuario(req, res) { // testing
             ultimos_gastos: gastos ? gastosMap : []
         })
     } catch (error) {
-        response.error(res, 'Error en el servidor')
+        response.error(res, 500, 'Error en el servidor')
         console.log('Error inesperado en getUsuario', error);
     }
 }
 
-async function updateImagenUsuario(req, res) {
+async function getImagenUsuario(req, res) {
     try {
         const id_usuario = req.usuario.id
-        const { filename } = req.file
-        const imageDefault = '/uploads/default.png'
 
         const usuario = await Usuario.findByPk(id_usuario)
 
@@ -66,24 +64,48 @@ async function updateImagenUsuario(req, res) {
             return response.error(res, 404, 'Usuario no encontrado')
         }
 
-        if (usuario.imagen_perfil && usuario.imagen_perfil !== imageDefault) { // si es verdadero, busca la ruta de la imagen existente
-            const imagenAnteriorPath = path.join(__dirname, `../../${usuario.imagen_perfil}`) // se almacena la ruta
+        const file = usuario.imagen_perfil
+        const imagePath = path.join(__dirname, '..', '..', 'uploads', 'users', file)
+
+        if (!fs.existsSync(imagePath)) {
+            return res.sendFile(path.join(__dirname, '..', '..', 'uploads', 'users', 'default.png'))
+        }
+
+        res.sendFile(imagePath)
+
+    } catch (error) {
+        response.error(res, 500, 'Error en el servidor al obtener la imagen')
+        console.log('Error inesperado en getImagenUsuario');
+    }
+}
+
+async function updateImagenUsuario(req, res) {
+    try {
+        const id_usuario = req.usuario.id
+        const { filename } = req.file
+
+        const usuario = await Usuario.findByPk(id_usuario)
+
+        if (!usuario) {
+            return response.error(res, 404, 'Usuario no encontrado')
+        }
+
+        if (usuario.imagen_perfil && usuario.imagen_perfil !== 'default.png') { // si es verdadero, busca la ruta de la imagen existente
+            const imagenAnteriorPath = path.join(__dirname, '..', '..', 'uploads', 'users', usuario.imagen_perfil) // se almacena la ruta
             if (fs.existsSync(imagenAnteriorPath)) { // si existe, borra la imagen anterior
                 fs.unlinkSync(imagenAnteriorPath)
             }
         }
 
-        const imagenPath = `/uploads/${filename}`
-
-        usuario.imagen_perfil = imagenPath
+        usuario.imagen_perfil = filename
         await usuario.save()
 
         response.success(res, 'Imagen actualizada correctamente', {
-            imagen: imagenPath
+            id: usuario.id_usuario
         })
 
     } catch (error) {
-        response.error(res, 'Error en el servidor al cargar imagen')
+        response.error(res, 500, 'Error en el servidor al cargar imagen')
         console.log('Error inesperado en updateImagenUsuario', error);
     }
 }
@@ -106,13 +128,11 @@ async function updateNamesUsuario(req, res) {
         await usuario.save()
 
         response.success(res, 'Nombre actualizado correctamente', {
-            id: usuario.id_usuario,
-            primer_nombre: usuario.primer_nombre,
-            primer_apellido: usuario.primer_apellido
+            id: usuario.id_usuario
         })
 
     } catch (error) {
-        response.error(res, 'Error en el servidor al actualizar nombre')
+        response.error(res, 500, 'Error en el servidor al actualizar nombre')
         console.log('Error inesperado en updateNamesUsuario', error);
     }
 }
@@ -140,12 +160,11 @@ async function updatePasswordUsuario(req, res) {
         await usuario.save()
 
         response.success(res, 'Contraseña actualizada correctamente', {
-            id: usuario.id_usuario,
-            correo: usuario.correo_electronico,
+            id: usuario.id_usuario
         })
 
     } catch (error) {
-        response.error(res, 'Error en el servidor al actualizar contraseña')
+        response.error(res, 500, 'Error en el servidor al actualizar contraseña')
         console.log('Error inesperado en updatePasswordUsuario', error);
     }
 }
@@ -154,16 +173,29 @@ async function deleteUsuario(req, res) {
     try {
         const id_usuario = req.usuario.id
 
+        const usuario = await Usuario.findByPk(id_usuario, {
+            attributes: ['imagen_perfil']
+        })
+
         const result = await Usuario.destroy({ where: { id_usuario } })
 
         if (result === 0) {
             return response.error(res, 404, 'No se encontró el usuario para eliminar')
         }
 
-        response.success(res, 'Cuenta eliminada correctamente')
+        if (usuario.imagen_perfil && usuario.imagen_perfil !== 'default.png') { // si es verdadero, busca la ruta de la imagen existente
+            const imagenAnteriorPath = path.join(__dirname, '..', '..', 'uploads', 'users', usuario.imagen_perfil) // se almacena la ruta
+            if (fs.existsSync(imagenAnteriorPath)) { // si existe, borra la imagen anterior
+                fs.unlinkSync(imagenAnteriorPath)
+            }
+        }
+
+        response.success(res, 'Cuenta eliminada correctamente', {
+            eliminado: true
+        })
 
     } catch (error) {
-        response.error(res, 'Error en el servidor al eliminar usuario')
+        response.error(res, 500, 'Error en el servidor al eliminar usuario')
         console.log('Error inesperado en deleteUsuario', error);
     }
 }
@@ -171,6 +203,7 @@ async function deleteUsuario(req, res) {
 
 module.exports = {
     getUsuario,
+    getImagenUsuario,
     updateImagenUsuario,
     updateNamesUsuario,
     updatePasswordUsuario,

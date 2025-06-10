@@ -5,5 +5,6 @@ const router = express.Router()
 
 router.post('/gasto', verifyToken, gastoController.createGasto)
 router.get('/gastos', verifyToken, gastoController.historyGastos)
+router.get('/estadisticas', verifyToken, gastoController.statisticsGastos)
 
 module.exports = router
